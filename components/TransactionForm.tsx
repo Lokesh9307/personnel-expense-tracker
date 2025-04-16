@@ -1,45 +1,82 @@
 "use client";
 
+import { useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
+
 import { Button } from "@/components/ui/button";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Transaction } from "@/lib/types";
 
-const formSchema = z.object({
-  amount: z.string().min(1, "Amount is required").transform((val) => Number(val)),
+// Raw input schema for form (all string-based)
+const rawFormSchema = z.object({
+  amount: z
+    .string()
+    .min(1, "Amount is required")
+    .refine((val) => !isNaN(Number(val)), {
+      message: "Amount must be a valid number",
+    }),
   description: z.string().min(1, "Description is required"),
-  date: z.string().min(1, "Date is required").transform((val) => new Date(val)),
+  date: z
+    .string()
+    .min(1, "Date is required")
+    .refine((val) => !isNaN(Date.parse(val)), {
+      message: "Invalid date format",
+    }),
 });
+
+// Type from the raw schema (string-based inputs)
+type RawFormValues = z.infer<typeof rawFormSchema>;
 
 interface TransactionFormProps {
   onSubmit: (transaction: Transaction) => void;
   initialData?: Transaction;
 }
 
-export default function TransactionForm({ onSubmit, initialData }: TransactionFormProps) {
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: initialData
-      ? {
-          amount: String(initialData.amount),
-          description: initialData.description,
-          date: initialData.date.toISOString().split("T")[0],
-        }
-      : {
-          amount: "",
-          description: "",
-          date: new Date().toISOString().split("T")[0],
-        },
+export default function TransactionForm({
+  onSubmit,
+  initialData,
+}: TransactionFormProps) {
+  const form = useForm<RawFormValues>({
+    resolver: zodResolver(rawFormSchema),
+    defaultValues: {
+      amount: initialData ? String(initialData.amount) : "",
+      description: initialData?.description || "",
+      date: initialData
+        ? initialData.date.toISOString().split("T")[0]
+        : new Date().toISOString().split("T")[0],
+    },
   });
 
-  const handleSubmit = (values: z.infer<typeof formSchema>) => {
-    onSubmit({
+  useEffect(() => {
+    if (initialData) {
+      form.reset({
+        amount: String(initialData.amount),
+        description: initialData.description,
+        date: initialData.date.toISOString().split("T")[0],
+      });
+    }
+  }, [initialData, form]);
+
+  const handleSubmit = (values: RawFormValues) => {
+    const transformed: Transaction = {
       id: initialData?.id || "",
-      ...values,
-    });
+      amount: Number(values.amount),
+      description: values.description,
+      date: new Date(values.date),
+    };
+
+    onSubmit(transformed);
+
     if (!initialData) {
       form.reset();
     }
