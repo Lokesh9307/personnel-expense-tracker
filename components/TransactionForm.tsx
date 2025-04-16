@@ -51,10 +51,11 @@ export default function TransactionForm({
     defaultValues: {
       amount: initialData ? String(initialData.amount) : "",
       description: initialData?.description || "",
-      date: initialData
+      date: initialData?.date
         ? initialData.date.toISOString().split("T")[0]
         : new Date().toISOString().split("T")[0],
     },
+    
   });
 
   useEffect(() => {
@@ -62,7 +63,9 @@ export default function TransactionForm({
       form.reset({
         amount: String(initialData.amount),
         description: initialData.description,
-        date: initialData.date.toISOString().split("T")[0],
+        date: initialData.date
+          ? initialData.date.toISOString().split("T")[0]
+          : new Date().toISOString().split("T")[0],
       });
     }
   }, [initialData, form]);
