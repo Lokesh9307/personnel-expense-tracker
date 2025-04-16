@@ -17,7 +17,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Transaction } from "@/lib/types";
 
-// Raw input schema for form (all values are strings)
+// Schema with string inputs (as entered in the form)
 const rawFormSchema = z.object({
   amount: z
     .string()
@@ -45,18 +45,15 @@ export default function TransactionForm({
   onSubmit,
   initialData,
 }: TransactionFormProps) {
-  const defaultValues: RawFormValues = {
-    amount: initialData ? String(initialData.amount) : "",
-    description: initialData?.description || "",
-    date: initialData?.date
-      ? new Date(initialData.date).toISOString().split("T")[0]
-      : new Date().toISOString().split("T")[0],
-  };
-  
-
   const form = useForm<RawFormValues>({
     resolver: zodResolver(rawFormSchema),
-    defaultValues,
+    defaultValues: {
+      amount: initialData ? String(initialData.amount) : "",
+      description: initialData?.description || "",
+      date: initialData?.date
+        ? new Date(initialData.date).toISOString().split("T")[0]
+        : new Date().toISOString().split("T")[0],
+    },
   });
 
   useEffect(() => {
@@ -70,11 +67,10 @@ export default function TransactionForm({
       });
     }
   }, [initialData, form]);
-  
 
   const handleSubmit = (values: RawFormValues) => {
     const transformed: Transaction = {
-      id: initialData?.id || "", // use proper ID if available
+      id: initialData?.id || "",
       amount: Number(values.amount),
       description: values.description,
       date: new Date(values.date),
@@ -97,12 +93,7 @@ export default function TransactionForm({
             <FormItem>
               <FormLabel>Amount</FormLabel>
               <FormControl>
-                <Input
-                  type="number"
-                  step="0.01"
-                  placeholder="0.00"
-                  {...field}
-                />
+                <Input type="number" step="0.01" placeholder="0.00" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
