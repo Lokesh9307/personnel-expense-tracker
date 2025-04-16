@@ -17,7 +17,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Transaction } from "@/lib/types";
 
-// Raw input schema for form (all string-based)
+// Raw input schema for form (all values are strings)
 const rawFormSchema = z.object({
   amount: z
     .string()
@@ -34,7 +34,6 @@ const rawFormSchema = z.object({
     }),
 });
 
-// Type from the raw schema (string-based inputs)
 type RawFormValues = z.infer<typeof rawFormSchema>;
 
 interface TransactionFormProps {
@@ -46,16 +45,18 @@ export default function TransactionForm({
   onSubmit,
   initialData,
 }: TransactionFormProps) {
+  const defaultValues: RawFormValues = {
+    amount: initialData ? String(initialData.amount) : "",
+    description: initialData?.description || "",
+    date: initialData?.date
+      ? new Date(initialData.date).toISOString().split("T")[0]
+      : new Date().toISOString().split("T")[0],
+  };
+  
+
   const form = useForm<RawFormValues>({
     resolver: zodResolver(rawFormSchema),
-    defaultValues: {
-      amount: initialData ? String(initialData.amount) : "",
-      description: initialData?.description || "",
-      date: initialData?.date
-        ? initialData.date.toISOString().split("T")[0]
-        : new Date().toISOString().split("T")[0],
-    },
-    
+    defaultValues,
   });
 
   useEffect(() => {
@@ -64,15 +65,16 @@ export default function TransactionForm({
         amount: String(initialData.amount),
         description: initialData.description,
         date: initialData.date
-          ? initialData.date.toISOString().split("T")[0]
+          ? new Date(initialData.date).toISOString().split("T")[0]
           : new Date().toISOString().split("T")[0],
       });
     }
   }, [initialData, form]);
+  
 
   const handleSubmit = (values: RawFormValues) => {
     const transformed: Transaction = {
-      id: initialData?.id || "",
+      id: initialData?.id || "", // use proper ID if available
       amount: Number(values.amount),
       description: values.description,
       date: new Date(values.date),
@@ -95,7 +97,12 @@ export default function TransactionForm({
             <FormItem>
               <FormLabel>Amount</FormLabel>
               <FormControl>
-                <Input type="number" step="0.01" placeholder="0.00" {...field} />
+                <Input
+                  type="number"
+                  step="0.01"
+                  placeholder="0.00"
+                  {...field}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
